@@ -19,6 +19,7 @@ print(sudoku_list[0])
 
 rules_path = 'rules/sudoku-rules-{0}x{0}.txt'.format(sudoku_size)
 #%%
+"""
 with open(rules_path) as f:
     default_sudoku_rules_string = f.read()
     
@@ -31,7 +32,7 @@ cnf_clauses_list = cnf_clauses_str.replace("\n", ' ').split('0')[:-1]
 
 cnf_clauses_list = [ x.strip().split(' ') for x in cnf_clauses_list]
 
-
+"""
 #%%
 
 
@@ -54,6 +55,13 @@ def sudoku_dict_to_cnf(s_dict):
 
 puzzle_clauses = sudoku_dict_to_cnf(sudoku_dict)
 
+#%% 
+
+from sat_funcs import *
 
 
+variables_n, clause_n, rules_clauses = read_file(rules_path)
 
+clauses = rules_clauses + puzzle_clauses
+
+DPLL(clauses)

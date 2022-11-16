@@ -42,7 +42,11 @@ def read_file(filepath):
             
 
 
-def unit_propagate(literal,clause_list):
+def unit_propagate(literal,clause_list, var_dict):
+    
+    literal_ref,assignment_bool = (literal,True) if literal[0]!='-' else (literal[1:],False)
+    var_dict[literal_ref]=assignment_bool
+    
     return [clause for clause in clause_list if literal not in clause]
     
 def assign_pure_literal(literal,clause_list):
@@ -63,6 +67,14 @@ def check_null_clause(clause_list):
             return True
     return False
     
+def negate_literal(l1):
+    
+    if l1[0]=="-":
+        return l1[1:]
+    else:
+        return "-"+l1
+    
+    
     
 def choose_literal(clause_list):  
     for clause in clause_list:
@@ -70,7 +82,7 @@ def choose_literal(clause_list):
             #print("cl1nl",clause_list,"l11",l1)
             return l1
 
-def DPLL(clause_list):
+def DPLL(clause_list, var_dict):
     nc_list = copy.deepcopy(clause_list)
     #-print(nc_list, time.time())
     #time.sleep(10)
@@ -80,7 +92,7 @@ def DPLL(clause_list):
         if 1 in c_lengths:
             prop_literal = nc_list[c_lengths.index(1)][0]
             #print(prop_literal, "pl1")
-            nc_list = unit_propagate(prop_literal,nc_list)
+            nc_list = unit_propagate(prop_literal,nc_list,var_dict)
             nc_list = assign_pure_literal(prop_literal, nc_list)
         else:
             break
@@ -95,37 +107,55 @@ def DPLL(clause_list):
         return True
     
     next_literal = choose_literal(nc_list)
+    negate_next_literal = negate_literal(next_literal)
     #print("nl",next_literal)
     cnf_branch1 = nc_list + [[next_literal]]
-    cnf_branch2 = nc_list + [['-'+next_literal]]
-        
-    #print("PP1", cnf_branch1,"pp2",cnf_branch2)
-    ret_val = (DPLL(cnf_branch1)) or (DPLL(cnf_branch2)) 
-    #print("h112",ret_val)
-    return ret_val
-
-
-r_path = r'simplesat_testcases/sat/3.cnf'
-
-yes_path = "aim_sat/yes"
-
-no_path = "aim_sat/no"
-yes_sat_list = os.listdir(yes_path)
-no_sat_list = os.listdir(no_path)
-
-yes_sat_list.sort()
-no_sat_list.sort()
-
-
-for sat_name in no_sat_list:
-    #time.sleep(2)
-    r_path = os.path.join(no_path, sat_name)
-    variables_n, clause_n, clauses = read_file(r_path)
-    if variables_n == "100" or variables_n == '50':
-        continue
-    print("variable number {0}, clause number {1}, filename {2}".format(variables_n,clause_n,sat_name))    
     
-    sat_state = DPLL(clauses)
-    print("SAT State = ",sat_state)
-    if sat_state:
-        print("Mismatch!")
+    dpll_split_left = DPLL(cnf_branch1,var_dict)
+    
+    if not dpll_split_left:
+        cnf_branch2 = nc_list + [[negate_next_literal]]
+        #print("PP1", cnf_branch1,"pp2",cnf_branch2)
+        dpll_split_right = DPLL(cnf_branch2,var_dict) 
+        #print("h112",ret_val)
+        return dpll_split_right
+   
+    return dpll_split_left 
+
+def variable_dict_generation(clause_list):
+    
+    flat_list = set([item if item[0]!='-' else item[1:] for sublist in clauses for item in sublist ])
+    
+    var_dict = {x:"" for x in flat_list}
+    
+    return var_dict
+
+#%%
+
+if __name__ == "__main__":
+        
+    r_path = r'simplesat_testcases/sat/3.cnf'
+    
+    yes_path = "aim_sat/yes"
+    
+    no_path = "aim_sat/no"
+    yes_sat_list = os.listdir(yes_path)
+    no_sat_list = os.listdir(no_path)
+    
+    yes_sat_list.sort()
+    no_sat_list.sort()
+    
+    
+    for sat_name in yes_sat_list:
+        #time.sleep(2)
+        r_path = os.path.join(yes_path, sat_name)
+        variables_n, clause_n, clauses = read_file(r_path)
+        if variables_n == "100" or variables_n == '200':
+            continue
+        print("variable number {0}, clause number {1}, filename {2}".format(variables_n,clause_n,sat_name))    
+        var_dict = variable_dict_generation(clauses)
+        
+        sat_state = DPLL(clauses, var_dict)
+        print("SAT State = ",sat_state)
+        if sat_state:
+            print("Mismatch!")
