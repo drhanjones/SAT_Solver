@@ -124,7 +124,7 @@ def DPLL(clause_list, var_dict):
 
 def variable_dict_generation(clause_list):
     
-    flat_list = set([item if item[0]!='-' else item[1:] for sublist in clauses for item in sublist ])
+    flat_list = set([item if item[0]!='-' else item[1:] for sublist in clause_list for item in sublist ])
     
     var_dict = {x:"" for x in flat_list}
     
